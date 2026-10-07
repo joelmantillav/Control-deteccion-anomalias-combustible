@@ -1,0 +1,297 @@
+
+Project control_combustibles {
+  database_type: 'Oracle'
+  Note: 'Modelo E-R v1. RUAT, Aduana, YPFB y ANH se representan como tablas con datos simulados.'
+}
+
+Table departamento {
+  id_departamento number(2) [pk]
+  nombre varchar2(50) [not null, unique]
+}
+
+Table municipio {
+  id_municipio number(5) [pk]
+  id_departamento number(2) [not null, ref: > departamento.id_departamento]
+  nombre varchar2(100) [not null]
+}
+
+Table estacion {
+  id_estacion number(6) [pk]
+  id_municipio number(5) [not null, ref: > municipio.id_municipio]
+  nombre varchar2(150) [not null]
+  nit varchar2(20) [not null, unique]
+  direccion varchar2(250)
+  latitud number(9,6) [not null]
+  longitud number(9,6) [not null]
+  es_fronteriza char(1) [not null, default: 'N', note: 'S/N']
+}
+
+Table surtidor {
+  id_surtidor number(8) [pk]
+  id_estacion number(6) [not null, ref: > estacion.id_estacion]
+  codigo varchar2(20) [not null]
+  estado varchar2(15) [not null, default: 'ACTIVO', note: 'ACTIVO/INACTIVO']
+
+  indexes {
+    (id_estacion, codigo) [unique]
+  }
+}
+
+Table tiempo_viaje {
+  id_estacion_origen number(6) [not null, ref: > estacion.id_estacion]
+  id_estacion_destino number(6) [not null, ref: > estacion.id_estacion]
+  minutos_estimados number(5) [not null, note: 'Tiempo simulado de viaje (tipo Google Maps)']
+  fecha_estimacion date [not null]
+
+  indexes {
+    (id_estacion_origen, id_estacion_destino) [pk]
+  }
+  Note: 'Origen distinto de destino'
+}
+
+Table recepcion_combustible {
+  id_recepcion number(10) [pk]
+  id_estacion number(6) [not null, ref: > estacion.id_estacion]
+  id_combustible number(3) [not null, ref: > combustible.id_combustible]
+  nro_guia_ypfb varchar2(30) [not null, unique]
+  cantidad number(12,3) [not null]
+  fecha_hora timestamp [not null]
+  Note: 'Despachos de YPFB a la estacion, para conciliar recibido vs vendido'
+}
+
+Table unidad_medida {
+  id_unidad number(2) [pk]
+  nombre varchar2(30) [not null]
+  simbolo varchar2(5) [not null, unique, note: 'L, m3']
+}
+
+Table combustible {
+  id_combustible number(3) [pk]
+  id_unidad number(2) [not null, ref: > unidad_medida.id_unidad]
+  nombre varchar2(50) [not null, unique]
+}
+
+Table precio_combustible {
+  id_precio number(8) [pk]
+  id_combustible number(3) [not null, ref: > combustible.id_combustible]
+  tipo_precio varchar2(15) [not null, note: 'SUBVENCIONADO/INTERNACIONAL']
+  precio_unitario number(10,4) [not null]
+  fecha_inicio date [not null]
+  fecha_fin date
+  Note: 'Un combustible esta subvencionado en una fecha si existe un precio SUBVENCIONADO vigente'
+}
+
+Table tipo_vehiculo {
+  id_tipo_vehiculo number(2) [pk]
+  nombre varchar2(30) [not null, unique, note: 'MOTO/AUTO/PESADO']
+  descripcion varchar2(200)
+}
+
+Table ficha_aduana {
+  id_ficha number(10) [pk]
+  nro_chasis varchar2(30) [not null, unique]
+  nro_dui varchar2(30)
+  id_tipo_vehiculo number(2) [not null, ref: > tipo_vehiculo.id_tipo_vehiculo]
+  id_combustible number(3) [not null, ref: > combustible.id_combustible]
+  marca varchar2(50) [not null]
+  modelo varchar2(50) [not null]
+  anio_fabricacion number(4) [not null]
+  cilindrada number(6)
+  capacidad_tanque number(8,2) [not null, note: 'En la unidad del combustible']
+  pais_procedencia varchar2(50)
+  fecha_nacionalizacion date
+  Note: 'Unica fuente de los datos tecnicos del vehiculo'
+}
+
+Table vehiculo {
+  id_vehiculo number(10) [pk]
+  id_ficha number(10) [unique, ref: - ficha_aduana.id_ficha, note: 'Nulo si es extranjero']
+  placa varchar2(15) [not null]
+  pais_placa varchar2(3) [not null, default: 'BOL']
+  codigo_rfid varchar2(40) [unique, note: 'B-SISA simulado. Nulo si es extranjero']
+  fecha_registro date [not null]
+
+  indexes {
+    (placa, pais_placa) [unique]
+  }
+}
+
+Table persona {
+  id_persona number(10) [pk]
+  tipo_documento varchar2(10) [not null, note: 'CI/PASAPORTE']
+  nro_documento varchar2(20) [not null]
+  complemento varchar2(5)
+  nombres varchar2(100) [not null]
+  apellido_paterno varchar2(60)
+  apellido_materno varchar2(60)
+  nacionalidad varchar2(50) [not null]
+  fecha_registro date [not null]
+
+  indexes {
+    (tipo_documento, nro_documento, complemento) [unique]
+  }
+}
+
+Table huella_digital {
+  id_huella number(10) [pk]
+  id_persona number(10) [not null, unique, ref: - persona.id_persona]
+  plantilla blob [not null]
+  fecha_enrolamiento date [not null]
+  estado varchar2(15) [not null, default: 'ACTIVA']
+}
+
+Table registro_ruat {
+  id_ruat number(10) [pk]
+  id_vehiculo number(10) [not null, ref: > vehiculo.id_vehiculo]
+  id_persona number(10) [not null, ref: > persona.id_persona, note: 'Propietario']
+  clase varchar2(30) [not null]
+  servicio varchar2(20) [not null, note: 'PARTICULAR']
+  fecha_alta date [not null]
+  fecha_baja date
+}
+
+Table registro_beneficio {
+  id_beneficio number(10) [pk]
+  id_vehiculo number(10) [not null, ref: > vehiculo.id_vehiculo]
+  id_persona number(10) [not null, ref: > persona.id_persona]
+  id_regla number(8) [not null, ref: > regla.id_regla, note: 'Version de MAX_VEHICULOS_PERSONA aplicada']
+  fecha_inicio date [not null]
+  fecha_fin date
+  Note: 'Vincula el vehiculo con la huella de su propietario RUAT. Un solo beneficio vigente por vehiculo'
+}
+
+Table tipo_periodo {
+  id_tipo_periodo number(2) [pk]
+  codigo varchar2(10) [not null, unique, note: 'DIA/SEMANA/MES']
+  nombre varchar2(30) [not null]
+}
+
+Table tipo_regla {
+  id_tipo_regla number(4) [pk]
+  codigo varchar2(40) [not null, unique]
+  nombre varchar2(100) [not null]
+  familia varchar2(15) [not null, note: 'PRECIO/REGISTRO/OPERATIVA/ANOMALIA']
+  descripcion varchar2(400)
+}
+
+Table regla {
+  id_regla number(8) [pk]
+  id_tipo_regla number(4) [not null, ref: > tipo_regla.id_tipo_regla]
+  id_tipo_vehiculo number(2) [ref: > tipo_vehiculo.id_tipo_vehiculo, note: 'Ambito opcional']
+  id_combustible number(3) [ref: > combustible.id_combustible, note: 'Ambito opcional']
+  id_tipo_periodo number(2) [ref: > tipo_periodo.id_tipo_periodo]
+  solo_fronteriza char(1) [note: 'S/N, opcional']
+  valor number(12,3)
+  valor_secundario number(12,3)
+  gravedad varchar2(5) [note: 'BAJA/MEDIA/ALTA, solo familia ANOMALIA']
+  fecha_inicio date [not null]
+  fecha_fin date
+  Note: 'Cada fila es una version de una regla. Al cambiar la politica se cierra la vigencia y se crea otra fila'
+}
+
+Table permiso_bidon {
+  id_permiso number(10) [pk]
+  id_persona number(10) [not null, ref: > persona.id_persona]
+  id_combustible number(3) [not null, ref: > combustible.id_combustible]
+  id_tipo_periodo number(2) [not null, ref: > tipo_periodo.id_tipo_periodo]
+  nro_resolucion_anh varchar2(30) [not null, unique]
+  motivo varchar2(200) [not null]
+  cantidad_autorizada number(10,3) [not null]
+  fecha_emision date [not null]
+  fecha_inicio date [not null]
+  fecha_fin date [not null]
+}
+
+Table transaccion {
+  id_transaccion number(12) [pk]
+  id_surtidor number(8) [not null, ref: > surtidor.id_surtidor]
+  id_combustible number(3) [not null, ref: > combustible.id_combustible]
+  id_persona number(10) [ref: > persona.id_persona, note: 'Quien carga. Nulo si falla la identificacion']
+  fecha_hora timestamp [not null]
+  cantidad_total number(10,3) [not null]
+  tipo_transaccion varchar2(10) [not null, note: 'VEHICULAR/BIDON']
+  huella_verificada char(1) [not null, note: 'S/N']
+}
+
+Table carga_vehicular {
+  id_transaccion number(12) [pk, ref: - transaccion.id_transaccion]
+  id_vehiculo number(10) [not null, ref: > vehiculo.id_vehiculo]
+  id_beneficio number(10) [ref: > registro_beneficio.id_beneficio, note: 'Nulo si no aplica subvencion']
+  id_regla_cuota number(8) [ref: > regla.id_regla, note: 'Version de CUOTA_SUBVENCIONADA aplicada']
+  rfid_leido char(1) [not null, note: 'S/N']
+}
+
+Table compra_bidon {
+  id_transaccion number(12) [pk, ref: - transaccion.id_transaccion]
+  id_permiso number(10) [ref: > permiso_bidon.id_permiso, note: 'Nulo si compra sin permiso']
+  nro_recipientes number(3) [not null]
+  motivo_declarado varchar2(200)
+}
+
+Table detalle_transaccion {
+  id_transaccion number(12) [not null, ref: > transaccion.id_transaccion]
+  nro_linea number(2) [not null]
+  id_precio number(8) [not null, ref: > precio_combustible.id_precio]
+  cantidad number(10,3) [not null]
+  motivo_precio varchar2(25) [not null, note: 'CUOTA/EXCEDE_CUOTA/NO_TITULAR/SIN_BENEFICIO/SIN_SUBVENCION/EXTRANJERO/FALLA_IDENTIFICACION/SIN_PERMISO/EXCEDE_PERMISO']
+
+  indexes {
+    (id_transaccion, nro_linea) [pk]
+  }
+}
+
+Table alerta {
+  id_alerta number(12) [pk]
+  id_regla number(8) [not null, ref: > regla.id_regla]
+  id_transaccion number(12) [ref: > transaccion.id_transaccion]
+  id_estacion number(6) [ref: > estacion.id_estacion]
+  fecha_deteccion timestamp [not null]
+  descripcion varchar2(400) [not null]
+  estado_revision varchar2(15) [not null, default: 'PENDIENTE', note: 'PENDIENTE/REVISADA']
+  resultado_revision varchar2(20) [note: 'CONFIRMADA/FALSO_POSITIVO']
+  fecha_revision date
+  Note: 'Debe referenciar una transaccion o una estacion. La gravedad se obtiene de la regla'
+}
+
+TableGroup ubicacion_y_estaciones [color: #2E86AB] {
+  departamento
+  municipio
+  estacion
+  surtidor
+  tiempo_viaje
+  recepcion_combustible
+}
+
+TableGroup combustibles_y_precios [color: #E07A1F] {
+  unidad_medida
+  combustible
+  precio_combustible
+}
+
+TableGroup vehiculos [color: #3A7D44] {
+  tipo_vehiculo
+  ficha_aduana
+  vehiculo
+}
+
+TableGroup personas_y_registros [color: #7B4FA0] {
+  persona
+  huella_digital
+  registro_ruat
+  registro_beneficio
+}
+
+TableGroup reglas_dinamicas [color: #C0392B] {
+  tipo_periodo
+  tipo_regla
+  regla
+}
+
+TableGroup operaciones_y_alertas [color: #5D6D7E] {
+  permiso_bidon
+  transaccion
+  carga_vehicular
+  compra_bidon
+  detalle_transaccion
+  alerta
+}
