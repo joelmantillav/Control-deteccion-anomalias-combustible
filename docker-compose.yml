@@ -1,0 +1,19 @@
+# Oracle Database 26ai Free (imagen construida localmente con oracle/docker-images)
+# Antes de usar este compose hay que construir la imagen: ver README.md
+services:
+  oracle:
+    image: oracle/database:23.26.0-free
+    container_name: oracle-combustible
+    restart: unless-stopped
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PWD: ${ORACLE_PWD:?Falta ORACLE_PWD, copia .env.example a .env}
+    volumes:
+      # Datos persistentes de la base
+      - oracle-data:/opt/oracle/oradata
+      # Scripts que se ejecutan UNA vez, al crear la base (orden alfabetico)
+      - ./Sql:/opt/oracle/scripts/setup:ro
+
+volumes:
+  oracle-data:
