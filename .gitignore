@@ -1,1 +1,7 @@
+# Credenciales locales
 .env
+
+# Respaldos y logs (pueden contener datos)
+backups/
+*.dmp
+*.log
