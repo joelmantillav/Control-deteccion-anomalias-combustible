@@ -1,19 +1,48 @@
 # Oracle Database 26ai Free (imagen construida localmente con oracle/docker-images)
 # Antes de usar este compose hay que construir la imagen: ver README.md
+#   cd docker-images/OracleDatabase/SingleInstance/dockerfiles
+#   ./buildContainerImage.sh -v 23.26.0 -f
 services:
   oracle:
     image: oracle/database:23.26.0-free
     container_name: oracle-combustible
     restart: unless-stopped
     ports:
-      - "1521:1521"
+      # Solo desde la propia maquina. Acceso remoto: tunel SSH (nunca abrir 1521 a Internet)
+      - "127.0.0.1:1521:1521"
     environment:
       ORACLE_PWD: ${ORACLE_PWD:?Falta ORACLE_PWD, copia .env.example a .env}
+      COMBUSTIBLE_PWD: ${COMBUSTIBLE_PWD:?Falta COMBUSTIBLE_PWD, copia .env.example a .env}
+      # Las usa el script de seguridad para crear las cuentas (ver .env.example)
+      DBA_PWD: ${DBA_PWD:?Falta DBA_PWD}
+      APP_DB_PWD: ${APP_DB_PWD:?Falta APP_DB_PWD}
+      ANALISTA_PWD: ${ANALISTA_PWD:?Falta ANALISTA_PWD}
+      AUDITOR_PWD: ${AUDITOR_PWD:?Falta AUDITOR_PWD}
+      MONITOR_PWD: ${MONITOR_PWD:?Falta MONITOR_PWD}
+      BACKUP_PWD: ${BACKUP_PWD:?Falta BACKUP_PWD}
+      DEMO_PWD: ${DEMO_PWD:?Falta DEMO_PWD}
+      ADMIN_APP_PWD: ${ADMIN_APP_PWD:?Falta ADMIN_APP_PWD}
     volumes:
-      # Datos persistentes de la base
+      # Datos persistentes de la base (incluye oradata/backup para Data Pump)
       - oracle-data:/opt/oracle/oradata
       # Scripts que se ejecutan UNA vez, al crear la base (orden alfabetico)
       - ./Sql:/opt/oracle/scripts/setup:ro
+      # Pruebas, monitoreo y utilitarios (se ejecutan a mano con docker exec)
+      - ./Scripts:/opt/oracle/scripts/proyecto:ro
+    networks:
+      - red-combustible
+    healthcheck:
+      test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15m
+
+# Red propia: la aplicacion y el dashboard se conectaran a "oracle:1521"
+# por esta red, sin pasar por el puerto publicado.
+networks:
+  red-combustible:
+    name: red-combustible
 
 volumes:
   oracle-data:
