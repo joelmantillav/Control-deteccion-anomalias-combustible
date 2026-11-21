@@ -534,7 +534,8 @@ BEGIN
       END IF;
   END;
 
-  SELECT COUNT(*) INTO l_n FROM vehiculo;
+  -- solo los vehiculos de esta prueba (la base puede tener datos reales)
+  SELECT COUNT(*) INTO l_n FROM vehiculo WHERE placa LIKE 'PRB-%';
   chequear('no quedaron datos de prueba', l_n = 0);
 EXCEPTION
   WHEN OTHERS THEN
