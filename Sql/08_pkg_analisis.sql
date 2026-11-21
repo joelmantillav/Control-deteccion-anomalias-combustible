@@ -398,6 +398,9 @@ BEGIN
   INSERT INTO surtidor (id_estacion, codigo) VALUES (l_est_a, 'S1') RETURNING id_surtidor INTO l_sur_a;
   INSERT INTO persona (tipo_documento, nro_documento, nombres, nacionalidad, fecha_registro)
     VALUES ('CI', 'TST-P1', 'Prueba', 'BOLIVIANA', DATE '2026-01-01') RETURNING id_persona INTO l_p1;
+  -- huella ACTIVA: el trigger de beneficios la exige
+  INSERT INTO huella_digital (id_persona, plantilla, fecha_enrolamiento)
+    VALUES (l_p1, TO_BLOB(HEXTORAW('00')), DATE '2026-01-01');
   INSERT INTO ficha_aduana (nro_chasis, id_combustible, marca, modelo, anio_fabricacion, cilindrada, capacidad_tanque)
     VALUES ('CH-TST-001', l_gas, 'Toyota', 'Corolla', 2018, 1600, 50) RETURNING id_ficha INTO l_ficha;
   INSERT INTO vehiculo (id_tipo_vehiculo, id_ficha, placa, codigo_rfid, fecha_registro)
