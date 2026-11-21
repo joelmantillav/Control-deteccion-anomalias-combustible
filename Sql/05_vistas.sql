@@ -9,7 +9,6 @@
 --     (una BLOQUEADA no despacho combustible)
 --   * vigencia semiabierta [fecha_inicio, fecha_fin); NULL = vigente
 --   * semanas ISO (lunes); dia de semana 1 = lunes ... 7 = domingo
--- Autor: <nombre>   Fecha: 2026-11-18
 -- ============================================================
 ALTER SESSION SET CONTAINER = FREEPDB1;
 ALTER SESSION SET CURRENT_SCHEMA = combustible;

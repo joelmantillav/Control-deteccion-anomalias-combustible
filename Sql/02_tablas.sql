@@ -10,7 +10,6 @@
 --   * S/N para indicadores; estados con CHECK
 --   * los datos derivables (categoria de cilindrada, bloqueo, saldo)
 --     NO se guardan: se calculan (3FN)
--- Autor: <nombre>   Fecha: 2026-11-18
 -- ============================================================
 ALTER SESSION SET CONTAINER = FREEPDB1;
 ALTER SESSION SET CURRENT_SCHEMA = combustible;
