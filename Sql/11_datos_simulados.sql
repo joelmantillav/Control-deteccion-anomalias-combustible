@@ -166,7 +166,7 @@ DECLARE
       END IF;
     END LOOP;
     RETURN NULL;
-  END estacion;
+  END est_azar;
 
   -- ----------------------------------------------------------
   -- Altas de maestros
@@ -373,10 +373,16 @@ DECLARE
         VALUES (l_id, p_id(p_owner), l_clase, l_serv, l_alta);
 
       -- Beneficio: titular con huella, maximo 2 por persona, ~90 % lo tramito
-      IF p_hue(p_owner) = 'S' AND NVL(benef_owner(p_owner), 0) < 2 AND rnd < 0.9 THEN
+      IF p_hue(p_owner) = 'S'
+         AND (NOT benef_owner.EXISTS(p_owner) OR benef_owner(p_owner) < 2)
+         AND rnd < 0.9 THEN
         INSERT INTO registro_beneficio (id_vehiculo, id_persona, id_regla, fecha_inicio)
           VALUES (l_id, p_id(p_owner), l_regla_max, c_alta);
-        benef_owner(p_owner) := NVL(benef_owner(p_owner), 0) + 1;
+        IF benef_owner.EXISTS(p_owner) THEN
+          benef_owner(p_owner) := benef_owner(p_owner) + 1;
+        ELSE
+          benef_owner(p_owner) := 1;
+        END IF;
       END IF;
     END IF;
     va_id(nv) := l_id;
@@ -867,6 +873,11 @@ DECLARE
   l_gas  NUMBER; l_auto NUMBER; l_moto NUMBER; l_max NUMBER; l_semana NUMBER;
   l_tx   NUMBER; l_tk NUMBER; l_est VARCHAR2(10);
   l_n    PLS_INTEGER := 0;
+  -- variables de escenario (las variables van antes que las funciones)
+  v01 NUMBER; v02 NUMBER; v03 NUMBER; v04 NUMBER; v05 NUMBER; v06 NUMBER; v10 NUMBER;
+  v11 NUMBER; v12 NUMBER; v15 NUMBER; v131 NUMBER; v132 NUMBER; v133 NUMBER; v134 NUMBER;
+  p01 NUMBER; p02 NUMBER; p03 NUMBER; p04 NUMBER; p05 NUMBER; p06 NUMBER; p07 NUMBER; p08 NUMBER;
+  p10 NUMBER; p11 NUMBER; p12 NUMBER; p13 NUMBER; p15 NUMBER; px NUMBER;
 
   FUNCTION surtidor_de(p_estacion IN VARCHAR2) RETURN NUMBER IS
     l_id NUMBER;
@@ -875,7 +886,7 @@ DECLARE
       FROM surtidor s JOIN estacion e ON e.id_estacion = s.id_estacion
      WHERE e.nombre = p_estacion AND s.estado = 'ACTIVO';
     RETURN l_id;
-  END sur;
+  END surtidor_de;
 
   FUNCTION nueva_persona(p_doc IN VARCHAR2, p_huella IN BOOLEAN DEFAULT TRUE) RETURN NUMBER IS
     l_id NUMBER;
@@ -888,7 +899,7 @@ DECLARE
         VALUES (l_id, TO_BLOB(UTL_RAW.CAST_TO_RAW('HUELLA-' || p_doc)), c_fin - 400);
     END IF;
     RETURN l_id;
-  END persona;
+  END nueva_persona;
 
   -- Vehiculo nacional con duenio propio, RUAT y beneficio
   FUNCTION nuevo_vehiculo(p_placa IN VARCHAR2, p_tipo IN NUMBER, p_marca IN VARCHAR2, p_modelo IN VARCHAR2,
@@ -906,7 +917,7 @@ DECLARE
     INSERT INTO registro_beneficio (id_vehiculo, id_persona, id_regla, fecha_inicio)
       VALUES (l_id, p_duenio, l_max, c_fin - 200);
     RETURN l_id;
-  END vehiculo;
+  END nuevo_vehiculo;
 
   PROCEDURE carga(p_esc IN VARCHAR2, p_estacion IN VARCHAR2, p_veh IN NUMBER, p_per IN NUMBER,
                   p_cant IN NUMBER, p_ts IN DATE) IS
@@ -934,11 +945,6 @@ DECLARE
                          || NVL(pkg_transacciones.f_ultimas_alertas, '-') || ' (bidon)');
   END bidon;
 
-  -- variables de escenario
-  v01 NUMBER; v02 NUMBER; v03 NUMBER; v04 NUMBER; v05 NUMBER; v06 NUMBER; v10 NUMBER;
-  v11 NUMBER; v12 NUMBER; v15 NUMBER; v131 NUMBER; v132 NUMBER; v133 NUMBER; v134 NUMBER;
-  p01 NUMBER; p02 NUMBER; p03 NUMBER; p04 NUMBER; p05 NUMBER; p06 NUMBER; p07 NUMBER; p08 NUMBER;
-  p10 NUMBER; p11 NUMBER; p12 NUMBER; p13 NUMBER; p15 NUMBER; px NUMBER;
 BEGIN
   SELECT id_combustible   INTO l_gas  FROM combustible   WHERE nombre = 'Gasolina Especial';
   SELECT id_tipo_vehiculo INTO l_auto FROM tipo_vehiculo WHERE nombre = 'AUTO';
