@@ -9,7 +9,6 @@
 -- Errores: -20010 periodo invalido, -20011 tipo de regla inexistente,
 --          -20012 gravedad inconsistente con la familia,
 --          -20102 version con inicio no posterior a la existente.
--- Autor: <nombre>   Fecha: 2026-11-18
 -- ============================================================
 ALTER SESSION SET CONTAINER = FREEPDB1;
 ALTER SESSION SET CURRENT_SCHEMA = combustible;
@@ -535,7 +534,8 @@ BEGIN
       END IF;
   END;
 
-  SELECT COUNT(*) INTO l_n FROM vehiculo;
+  -- solo los vehiculos de esta prueba (la base puede tener datos reales)
+  SELECT COUNT(*) INTO l_n FROM vehiculo WHERE placa LIKE 'PRB-%';
   chequear('no quedaron datos de prueba', l_n = 0);
 EXCEPTION
   WHEN OTHERS THEN

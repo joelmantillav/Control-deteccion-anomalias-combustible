@@ -9,7 +9,6 @@
 # primera vez (volumen vacio), antes que los .sql (orden alfabetico).
 # Los usuarios de aplicacion, auditor, etc. y el perfil de contrasenias
 # se crean en el script de seguridad.
-# Autor: <nombre>   Fecha: 2026-11-18
 # ============================================================
 
 if [ -z "${COMBUSTIBLE_PWD:-}" ]; then

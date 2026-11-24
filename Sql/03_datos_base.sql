@@ -5,7 +5,6 @@
 -- Lo que es dato de operacion (estaciones, vehiculos, personas,
 -- transacciones) va en el script de datos simulados.
 -- NO es re-ejecutable (inserta datos). Para repetir: down -v y up -d.
--- Autor: <nombre>   Fecha: 2026-11-18
 -- ============================================================
 ALTER SESSION SET CONTAINER = FREEPDB1;
 ALTER SESSION SET CURRENT_SCHEMA = combustible;
